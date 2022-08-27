@@ -50,6 +50,8 @@ class Window
     // Show or hide the mouse cursor.
     void showMouse(bool show);
 
+    void showWindow(bool show);
+
     // Set the mouse position in display space.
     void setMousePosition(unsigned x, unsigned y);
 

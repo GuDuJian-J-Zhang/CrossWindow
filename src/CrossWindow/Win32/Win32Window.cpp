@@ -156,12 +156,7 @@ bool Window::create(const WindowDesc& desc, EventQueue& eventQueue)
         SetWindowPos(hwnd, 0, x, y, windowRect.right, windowRect.bottom, 0);
     }
 
-    if (mDesc.visible)
-    {
-        ShowWindow(hwnd, SW_SHOW);
-        SetForegroundWindow(hwnd);
-        SetFocus(hwnd);
-    }
+    showWindow(mDesc.visible);
 
     static const DWM_BLURBEHIND blurBehind{{0}, {TRUE}, {NULL}, {TRUE}};
     DwmEnableBlurBehindWindow(hwnd, &blurBehind);
@@ -230,6 +225,25 @@ void Window::setProgress(float progress)
 }
 
 void Window::showMouse(bool show) { ShowCursor(show ? TRUE : FALSE); }
+
+void Window::showWindow(bool show) 
+{
+    if (nullptr == hwnd)
+    {
+        return;
+    }
+
+    if (show)
+    {
+        ShowWindow(hwnd, SW_SHOW);
+        SetForegroundWindow(hwnd);
+        SetFocus(hwnd);
+    }
+    else
+    {
+        ShowWindow(hwnd, SW_HIDE);
+    }
+}
 
 float Window::getDpiScale() const
 {
