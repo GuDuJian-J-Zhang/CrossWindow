@@ -87,7 +87,7 @@ Window::~Window()
 
 bool Window::create(const WindowDesc& desc, EventQueue& eventQueue)
 {
-	NSApplication* nsApp = (NSApplication*)getXWinState().application;
+    [NSApplication sharedApplication];
 	
 	NSRect rect = NSMakeRect(desc.x, desc.y, desc.width, desc.height);
 	NSWindowStyleMask styleMask = NSWindowStyleMaskTitled;
@@ -141,8 +141,7 @@ bool Window::create(const WindowDesc& desc, EventQueue& eventQueue)
 	[v setWantsLayer:YES];
 
 	[w setContentView:(XWinView*)view];
-	[w makeKeyAndOrderFront:nsApp];
-	
+	[w makeKeyAndOrderFront:NSApp];
 	
 	eventQueue.update();
 	
@@ -209,5 +208,10 @@ UVec2 Window::getCurrentDisplaySize()
 	size.x = screenRect.size.width;
 	size.y = screenRect.size.height;
 	return size;
+}
+
+void* Window::getNativeWindow() const
+{
+    return window;
 }
 }

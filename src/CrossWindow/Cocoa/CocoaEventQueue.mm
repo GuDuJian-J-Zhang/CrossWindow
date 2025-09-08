@@ -6,7 +6,7 @@ namespace xwin
 void EventQueue::update()
 {
     // Update Application
-    NSApplication* nsApp = (NSApplication*)getXWinState().application;
+    NSApplication* nsApp = NSApp;
     @autoreleasepool
     {
         NSEvent* nsEvent = nil;

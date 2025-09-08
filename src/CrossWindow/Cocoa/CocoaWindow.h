@@ -44,6 +44,8 @@ class Window
 
     // Set the type of this window's view layer
     void setLayer(LayerType type);
+    
+    void* getNativeWindow() const;
 
   protected:
     // NSString*
