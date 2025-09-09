@@ -214,4 +214,13 @@ void* Window::getNativeWindow() const
 {
     return window;
 }
+
+float Window::getBackingScaleFactor() const
+{
+    if (nullptr != window)
+    {
+        return [window backingScaleFactor];
+    }
+    return 1.0f;
+}
 }

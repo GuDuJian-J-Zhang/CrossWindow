@@ -46,6 +46,8 @@ class Window
     void setLayer(LayerType type);
     
     void* getNativeWindow() const;
+    
+    float getBackingScaleFactor() const;
 
   protected:
     // NSString*
