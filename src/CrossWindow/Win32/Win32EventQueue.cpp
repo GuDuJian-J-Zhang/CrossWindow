@@ -94,7 +94,8 @@ LRESULT EventQueue::pushEvent(MSG msg, Window* window)
     }
     case WM_PAINT:
     {
-        PAINTSTRUCT ps;
+        // do not repaint durring resize
+        /*PAINTSTRUCT ps;
         BeginPaint(window->hwnd, &ps);
         RECT rect;
         GetWindowRect(window->hwnd, &rect);
@@ -110,13 +111,14 @@ LRESULT EventQueue::pushEvent(MSG msg, Window* window)
         rect.right = cxWidth;
         rect.bottom = cyHeight;
         FillRect(ps.hdc, &rect, BorderBrush);
-        EndPaint(window->hwnd, &ps);
+        EndPaint(window->hwnd, &ps);*/
 
         e = xwin::Event(xwin::EventType::Paint, window);
         break;
     }
     case WM_ERASEBKGND:
     {
+        result = 1;
         break;
     }
     case WM_CLOSE:
