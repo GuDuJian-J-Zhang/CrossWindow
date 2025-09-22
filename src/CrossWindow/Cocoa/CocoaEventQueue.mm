@@ -97,13 +97,16 @@ void EventQueue::update()
                                                                                     nsEvent.modifierFlags & NSEventModifierFlagShift, nsEvent.modifierFlags & NSEventModifierFlagCommand)));
                     break;
                 case NSEventTypeMouseMoved:
+                {
+                    NSPoint mouseLocation = [nsEvent locationInWindow];
                     curEvent = xwin::Event(
                                            xwin::MouseMoveData(
-                                                               static_cast<unsigned>(nsEvent.absoluteX), static_cast<unsigned>(nsEvent.absoluteY),
-                                                               static_cast<unsigned>(nsEvent.absoluteX), static_cast<unsigned>(nsEvent.absoluteY),
+                                                               static_cast<unsigned>(mouseLocation.x), static_cast<unsigned>(mouseLocation.y),
+                                                               static_cast<unsigned>(mouseLocation.x), static_cast<unsigned>(mouseLocation.y),
                                                                static_cast<int>(nsEvent.deltaX),
                                                                static_cast<int>(nsEvent.deltaY))
                                            );
+                }
                     break;
                 case NSEventTypeScrollWheel:
                     [nsEvent deltaY];
