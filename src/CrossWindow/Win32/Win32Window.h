@@ -136,6 +136,8 @@ class Window
     // Update the window descriptor. Useful for batch updates.
     void updateDesc(WindowDesc& desc);
 
+    float getBackingScaleFactor() const;
+
   protected:
     // Executes an event callback asynchronously, use this for non-blocking
     // events (resizing while rendering, etc.)

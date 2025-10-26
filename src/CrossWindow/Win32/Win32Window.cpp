@@ -188,6 +188,13 @@ void Window::updateDesc(WindowDesc& desc)
     SetWindowPos(hwnd, 0, desc.x, desc.y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 }
 
+float Window::getBackingScaleFactor() const 
+{ 
+    const float t = GetDpiForWindow(hwnd);
+    const float scale = 96.0f / t;
+    return scale;
+}
+
 void Window::minimize() { ShowWindow(hwnd, SW_MINIMIZE); }
 
 void Window::maximize()
