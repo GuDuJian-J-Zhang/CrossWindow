@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "../Common/EventQueue.h"
 #include "../Common/Init.h"
 #include "../Common/WindowDesc.h"
@@ -23,6 +25,9 @@ public:
     bool create(const WindowDesc& desc, EventQueue& eventQueue);
 
     void close();
+
+    // Native window handle for bgfx/OpenGL (xcb_window_t as void*)
+    void* getNativeWindow() const { return reinterpret_cast<void*>(static_cast<uintptr_t>(mXcbWindowId)); }
 
   protected:
     xcb_connection_t* mConnection = nullptr;
