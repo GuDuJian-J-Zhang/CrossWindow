@@ -57,7 +57,10 @@ void EventQueue::pushEvent(const xcb_generic_event_t* event)
     {
     case XCB_CONFIGURE_NOTIFY:
     {
-        e = Event(EventType::Create, window);
+        // Window geometry changed (including initial size when window is mapped).
+        // Push Resize so the app gets dimensions like on Windows (WM_SIZE) and macOS.
+        xcb_configure_notify_event_t* cfg = (xcb_configure_notify_event_t*)event;
+        e = Event(ResizeData(cfg->width, cfg->height, true), window);
         break;
     }
     case XCB_EXPOSE:
