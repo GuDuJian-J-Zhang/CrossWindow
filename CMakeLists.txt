@@ -112,14 +112,12 @@ foreach(source IN LISTS FILE_SOURCES)
     source_group("${source_path_final}" FILES "${source}")
 endforeach()
 
-# Main files
-file(GLOB_RECURSE MAIN_SOURCES RELATIVE
-    ${CMAKE_HOME_DIRECTORY}
+# Main files: use absolute paths so they resolve when add_executable is called from parent (e.g. App)
+file(GLOB MAIN_SOURCES_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CrossWindow/Main/${XWIN_API_PATH}Main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CrossWindow/Main/${XWIN_API_PATH}Main.mm
 )
-
-set(XMAIN_SOURCES ${MAIN_SOURCES} CACHE STRING "Global Variable - The source files for the currently active protocol.")
+set(XMAIN_SOURCES ${MAIN_SOURCES_LIST} CACHE STRING "Global Variable - The source files for the currently active protocol." FORCE)
 
 # =============================================================
 
@@ -129,13 +127,18 @@ function(xwin_setup versionMajor versionMinor versionPatch versionRevision compa
     message("Warning: xwin_setup has not yet been implemented.")
 endfunction()
 
-function(xwin_add_executable targetProject targetSources)
+# xwin_add_executable:
+#   targetProject: name of the executable target
+#   ARGN: list of source files for the app (all remaining arguments)
+function(xwin_add_executable targetProject)
     message("Creating CrossWindow executable:")
 
     foreach(source IN LISTS XMAIN_SOURCES)
         source_group("" FILES "${source}")
     endforeach()
-    set(XWIN_FILES "${XMAIN_SOURCES}" "${targetSources}")
+    # Combine CrossWindow's main source(s) with all app sources passed in ARGN.
+    set(XWIN_APP_SOURCES ${ARGN})
+    set(XWIN_FILES "${XMAIN_SOURCES}" "${XWIN_APP_SOURCES}")
 
     if(XWIN_API STREQUAL "WIN32" OR XWIN_API STREQUAL "UWP")
         add_executable(
