@@ -7,10 +7,35 @@ void EventQueue::update()
 {
     // Update Application
     NSApplication* nsApp = NSApp;
+
+    // 先根据当前活动窗口的内容区域尺寸，合成一次 Resize 事件（如有变化）。
+    // 这样在 macOS 上拖动窗口改变大小时，也能得到统一的 xwin::EventType::Resize。
+    {
+        static NSSize sLastContentSize = {0, 0};
+        NSWindow* window = [nsApp keyWindow];
+        if (!window)
+        {
+            window = [nsApp mainWindow];
+        }
+        if (window)
+        {
+            NSRect contentRect = [window contentRectForFrameRect:[window frame]];
+            NSSize contentSize = contentRect.size;
+            if (sLastContentSize.width != contentSize.width ||
+                sLastContentSize.height != contentSize.height)
+            {
+                sLastContentSize = contentSize;
+                Event resizeEvent(
+                    ResizeData(static_cast<unsigned>(contentSize.width),
+                               static_cast<unsigned>(contentSize.height),
+                               false));
+                mQueue.push(resizeEvent);
+            }
+        }
+    }
     @autoreleasepool
     {
         NSEvent* nsEvent = nil;
-        
         do
         {
             nsEvent = [nsApp nextEventMatchingMask:NSEventMaskAny untilDate:nil inMode:NSDefaultRunLoopMode dequeue:YES];
