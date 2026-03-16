@@ -10,9 +10,15 @@ void EventQueue::update()
     const XWinState& xwinState = getXWinState();
     xcb_connection_t* connection = xwinState.connection;
     xcb_flush(connection);
-    xcb_wait_for_event(connection);
+    // Block until at least one event is available, then process it and any
+    // additional pending events.
+    if (xcb_generic_event_t* e = xcb_wait_for_event(connection))
+    {
+        pushEvent(e);
+    }
+
     xcb_generic_event_t* e;
-    while (xcb_generic_event_t* e = xcb_poll_for_event(connection))
+    while ((e = xcb_poll_for_event(connection)))
     {
         pushEvent(e);
     }
@@ -95,39 +101,30 @@ void EventQueue::pushEvent(const xcb_generic_event_t* event)
         xcb_button_press_event_t* bp = (xcb_button_press_event_t*)event;
 
         bool control = bp->state & XCB_MOD_MASK_CONTROL;
-        bool shift = bp->state & XCB_MOD_MASK_SHIFT;
-        bool lock = bp->state & XCB_MOD_MASK_LOCK;
+        bool shift   = bp->state & XCB_MOD_MASK_SHIFT;
+        bool lock    = bp->state & XCB_MOD_MASK_LOCK;
         ModifierState mods = ModifierState(control, lock, shift, false);
 
-        if (bp->state & XCB_BUTTON_MASK_1)
+        // On X11/XCB, button 4/5 are wheel up/down. Map them to MouseWheel
+        // events so higher-level code can treat scrolling separately from
+        // extra mouse buttons.
+        if (bp->detail == 4 || bp->detail == 5)
         {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Left, ButtonState::Pressed, mods),
-                window);
+            const double delta = (bp->detail == 4) ? +1.0 : -1.0;
+            mQueue.emplace(MouseWheelData(delta, mods), window);
         }
-        if (bp->state & XCB_BUTTON_MASK_2)
+        else
         {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Right, ButtonState::Pressed, mods),
-                window);
-        }
-        if (bp->state & XCB_BUTTON_MASK_3)
-        {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Middle, ButtonState::Pressed, mods),
-                window);
-        }
-        if (bp->state & XCB_BUTTON_MASK_4)
-        {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Button4, ButtonState::Pressed, mods),
-                window);
-        }
-        if (bp->state & XCB_BUTTON_MASK_5)
-        {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Button5, ButtonState::Pressed, mods),
-                window);
+            MouseInput btn = MouseInput::Button5;
+            switch (bp->detail)
+            {
+            case 1: btn = MouseInput::Left;   break;
+            case 2: btn = MouseInput::Middle; break;
+            case 3: btn = MouseInput::Right;  break;
+            default: break;
+            }
+
+            mQueue.emplace(MouseInputData(btn, ButtonState::Pressed, mods), window);
         }
         break;
     }
@@ -136,40 +133,26 @@ void EventQueue::pushEvent(const xcb_generic_event_t* event)
         xcb_button_release_event_t* br = (xcb_button_release_event_t*)event;
 
         bool control = br->state & XCB_MOD_MASK_CONTROL;
-        bool shift = br->state & XCB_MOD_MASK_SHIFT;
-        bool lock = br->state & XCB_MOD_MASK_LOCK;
+        bool shift   = br->state & XCB_MOD_MASK_SHIFT;
+        bool lock    = br->state & XCB_MOD_MASK_LOCK;
         ModifierState mods = ModifierState(control, lock, shift, false);
 
-        if (br->state & XCB_BUTTON_MASK_1)
+        // We already emit MouseWheel on press for 4/5; ignore their release.
+        if (br->detail == 4 || br->detail == 5)
         {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Left, ButtonState::Pressed, mods),
-                window);
+            break;
         }
-        if (br->state & XCB_BUTTON_MASK_2)
+
+        MouseInput btn = MouseInput::Button5;
+        switch (br->detail)
         {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Right, ButtonState::Pressed, mods),
-                window);
+        case 1: btn = MouseInput::Left;   break;
+        case 2: btn = MouseInput::Middle; break;
+        case 3: btn = MouseInput::Right;  break;
+        default: break;
         }
-        if (br->state & XCB_BUTTON_MASK_3)
-        {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Middle, ButtonState::Pressed, mods),
-                window);
-        }
-        if (br->state & XCB_BUTTON_MASK_4)
-        {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Button4, ButtonState::Pressed, mods),
-                window);
-        }
-        if (br->state & XCB_BUTTON_MASK_5)
-        {
-            mQueue.emplace(
-                MouseInputData(MouseInput::Button5, ButtonState::Pressed, mods),
-                window);
-        }
+
+        mQueue.emplace(MouseInputData(btn, ButtonState::Released, mods), window);
         break;
     }
     case XCB_MOTION_NOTIFY:
