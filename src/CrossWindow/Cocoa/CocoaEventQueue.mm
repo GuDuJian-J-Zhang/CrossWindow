@@ -136,12 +136,27 @@ void EventQueue::update()
                 case NSEventTypeOtherMouseDragged:
                 {
                     NSPoint mouseLocation = [nsEvent locationInWindow];
+
+                    // Cocoa 的窗口坐标原点在左下角，而 Windows / Linux 上我们使用的是
+                    // 左上角原点的像素坐标。这里按内容区域高度翻转 Y 轴，使三平台行为一致。
+                    NSWindow* w = nsEvent.window;
+                    if (!w)
+                    {
+                        w = [nsApp keyWindow];
+                    }
+                    CGFloat flippedY = mouseLocation.y;
+                    if (w)
+                    {
+                        NSRect contentRect = [w contentRectForFrameRect:[w frame]];
+                        flippedY = contentRect.size.height - mouseLocation.y;
+                    }
+
                     curEvent = Event(
                         MouseMoveData(
                             static_cast<unsigned>(mouseLocation.x),
-                            static_cast<unsigned>(mouseLocation.y),
+                            static_cast<unsigned>(flippedY),
                             static_cast<unsigned>(mouseLocation.x),
-                            static_cast<unsigned>(mouseLocation.y),
+                            static_cast<unsigned>(flippedY),
                             static_cast<int>(nsEvent.deltaX),
                             static_cast<int>(nsEvent.deltaY)));
                     break;
