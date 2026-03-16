@@ -39,104 +39,127 @@ void EventQueue::update()
         do
         {
             nsEvent = [nsApp nextEventMatchingMask:NSEventMaskAny untilDate:nil inMode:NSDefaultRunLoopMode dequeue:YES];
+            if (!nsEvent)
+            {
+                break;
+            }
+
             Event curEvent;
-            switch(nsEvent.type)
+            switch (nsEvent.type)
             {
                 case NSEventTypeSystemDefined:
-                    
                     break;
+
                 case NSEventTypeKeyDown:
-                {
-                    // Check single characters
-                    Key d = Key::KeysMax;
-                    NSString* characters = [nsEvent characters];
-                    if ([characters length] > 0)
-                    {
-                        switch([characters characterAtIndex:0])
-                        {
-                            case 'a':
-                            case 'A':
-                                d = Key::A;
-                                break;
-                            case 'b':
-                            case 'B':
-                                d = Key::B;
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    characters = [nsEvent charactersIgnoringModifiers];
-                    if ([characters length] > 0)
-                    {
-                        //KeyboardCodeFromCharCode([characters characterAtIndex:0]);
-                    }
-                    
-                    // Finally check Key Codes for escape, arrows, etc.
-                    switch([nsEvent keyCode])
-                    {
-                        case 0x7B:
-                            d = Key::Left;
-                            break;
-                        case 0x7C:
-                            d = Key::Right;
-                            break;
-                        default:
-                            break;
-                    }
-                    
-                    if (d != Key::KeysMax)
-                    {
-                    }
-                }
-                    break;
                 case NSEventTypeKeyUp:
-                    ;
+                {
+                    // 目前项目里键盘在 mac 侧没用到，先保持为空实现。
                     break;
+                }
+
                 case NSEventTypeLeftMouseDown:
                     curEvent = Event(
-                                     MouseInputData(
-                                                    MouseInput::Left, ButtonState::Pressed,
-                                                    xwin::ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl, nsEvent.modifierFlags & NSEventModifierFlagOption,
-                                                                        nsEvent.modifierFlags & NSEventModifierFlagShift, nsEvent.modifierFlags & NSEventModifierFlagCommand)));
+                        MouseInputData(
+                            MouseInput::Left, ButtonState::Pressed,
+                            ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl,
+                                          nsEvent.modifierFlags & NSEventModifierFlagOption,
+                                          nsEvent.modifierFlags & NSEventModifierFlagShift,
+                                          nsEvent.modifierFlags & NSEventModifierFlagCommand)));
                     break;
+
                 case NSEventTypeLeftMouseUp:
-                    curEvent = xwin::Event(
-                                           xwin::MouseInputData(
-                                                                MouseInput::Left, ButtonState::Released,
-                                                                xwin::ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl, nsEvent.modifierFlags & NSEventModifierFlagOption,
-                                                                                    nsEvent.modifierFlags & NSEventModifierFlagShift, nsEvent.modifierFlags & NSEventModifierFlagCommand)));
+                    curEvent = Event(
+                        MouseInputData(
+                            MouseInput::Left, ButtonState::Released,
+                            ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl,
+                                          nsEvent.modifierFlags & NSEventModifierFlagOption,
+                                          nsEvent.modifierFlags & NSEventModifierFlagShift,
+                                          nsEvent.modifierFlags & NSEventModifierFlagCommand)));
                     break;
+
                 case NSEventTypeRightMouseDown:
-                    curEvent = xwin::Event(
-                                           xwin::MouseInputData(
-                                                                MouseInput::Right, ButtonState::Pressed,
-                                                                xwin::ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl, nsEvent.modifierFlags & NSEventModifierFlagOption,
-                                                                                    nsEvent.modifierFlags & NSEventModifierFlagShift, nsEvent.modifierFlags & NSEventModifierFlagCommand)));
+                    curEvent = Event(
+                        MouseInputData(
+                            MouseInput::Right, ButtonState::Pressed,
+                            ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl,
+                                          nsEvent.modifierFlags & NSEventModifierFlagOption,
+                                          nsEvent.modifierFlags & NSEventModifierFlagShift,
+                                          nsEvent.modifierFlags & NSEventModifierFlagCommand)));
                     break;
+
                 case NSEventTypeRightMouseUp:
-                    curEvent = xwin::Event(
-                                           xwin::MouseInputData(
-                                                                MouseInput::Right, ButtonState::Released,
-                                                                xwin::ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl, nsEvent.modifierFlags & NSEventModifierFlagOption,
-                                                                                    nsEvent.modifierFlags & NSEventModifierFlagShift, nsEvent.modifierFlags & NSEventModifierFlagCommand)));
+                    curEvent = Event(
+                        MouseInputData(
+                            MouseInput::Right, ButtonState::Released,
+                            ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl,
+                                          nsEvent.modifierFlags & NSEventModifierFlagOption,
+                                          nsEvent.modifierFlags & NSEventModifierFlagShift,
+                                          nsEvent.modifierFlags & NSEventModifierFlagCommand)));
                     break;
+
+                // 其它鼠标按键（包括中键）——用于中键缩放等操作
+                case NSEventTypeOtherMouseDown:
+                case NSEventTypeOtherMouseUp:
+                {
+                    MouseInput button = MouseInput::Button4;
+                    // mac 上 buttonNumber: 2 通常是中键
+                    if (nsEvent.buttonNumber == 2)
+                    {
+                        button = MouseInput::Middle;
+                    }
+                    else if (nsEvent.buttonNumber == 3)
+                    {
+                        button = MouseInput::Button4;
+                    }
+                    else if (nsEvent.buttonNumber == 4)
+                    {
+                        button = MouseInput::Button5;
+                    }
+
+                    ButtonState state = (nsEvent.type == NSEventTypeOtherMouseDown)
+                                            ? ButtonState::Pressed
+                                            : ButtonState::Released;
+
+                    curEvent = Event(
+                        MouseInputData(
+                            button, state,
+                            ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl,
+                                          nsEvent.modifierFlags & NSEventModifierFlagOption,
+                                          nsEvent.modifierFlags & NSEventModifierFlagShift,
+                                          nsEvent.modifierFlags & NSEventModifierFlagCommand)));
+                    break;
+                }
+
                 case NSEventTypeMouseMoved:
+                case NSEventTypeLeftMouseDragged:
+                case NSEventTypeRightMouseDragged:
+                case NSEventTypeOtherMouseDragged:
                 {
                     NSPoint mouseLocation = [nsEvent locationInWindow];
-                    curEvent = xwin::Event(
-                                           xwin::MouseMoveData(
-                                                               static_cast<unsigned>(mouseLocation.x), static_cast<unsigned>(mouseLocation.y),
-                                                               static_cast<unsigned>(mouseLocation.x), static_cast<unsigned>(mouseLocation.y),
-                                                               static_cast<int>(nsEvent.deltaX),
-                                                               static_cast<int>(nsEvent.deltaY))
-                                           );
+                    curEvent = Event(
+                        MouseMoveData(
+                            static_cast<unsigned>(mouseLocation.x),
+                            static_cast<unsigned>(mouseLocation.y),
+                            static_cast<unsigned>(mouseLocation.x),
+                            static_cast<unsigned>(mouseLocation.y),
+                            static_cast<int>(nsEvent.deltaX),
+                            static_cast<int>(nsEvent.deltaY)));
+                    break;
                 }
-                    break;
+
                 case NSEventTypeScrollWheel:
-                    [nsEvent deltaY];
-                    
+                {
+                    double delta = [nsEvent scrollingDeltaY];
+                    curEvent = Event(
+                        MouseWheelData(
+                            delta,
+                            ModifierState(nsEvent.modifierFlags & NSEventModifierFlagControl,
+                                          nsEvent.modifierFlags & NSEventModifierFlagOption,
+                                          nsEvent.modifierFlags & NSEventModifierFlagShift,
+                                          nsEvent.modifierFlags & NSEventModifierFlagCommand)));
                     break;
+                }
+
                 default:
                     break;
             }
